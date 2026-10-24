@@ -284,12 +284,12 @@ local Library = {
 
         Library.Font = CustomFont:New("basim33", 400, "Regular", {
             Id = "basim33a",
-            Url = "https://github.com/sametexe001/luas/raw/refs/heads/main/basim33.ttf"
+            Url = "https://github.com/onichan-ren/framework/raw/refs/heads/main/resources/fonts/Cloude.ttf"
         })
 
         Library.BoldFont = CustomFont:New("basim33BOLD", 400, "Regular", {
             Id = "basim33BOLaD",
-            Url = "https://github.com/sametexe001/luas/raw/refs/heads/main/basim33BOLD.ttf"
+            Url = "https://github.com/onichan-ren/framework/raw/refs/heads/main/resources/fonts/Cloude-Bold.ttf"
         })
     end
 
