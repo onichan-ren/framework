@@ -3239,6 +3239,80 @@ local Library = {
             return setmetatable(Page, Library)
         end
 
+
+
+        Library.AddDependencyBox = function(Self)
+            local Container = Library:Create("Frame", {
+                Parent = Self.Items["Content"].Instance,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Size = UDim2.new(1, 0, 0, 0),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                Visible = true
+            })
+        
+            Library:Create("UIListLayout", {
+                Parent = Container.Instance,
+                Padding = UDim.new(0, 6),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+        
+            return setmetatable({
+                Window = Self.Window,
+                Page = Self.Page,
+                Items = {
+                    Content = Container
+                },
+                Dependencies = {},
+                Controls = {},
+                Visible = true,
+        
+                SetVisibility = function(DepBox, Visible)
+                    DepBox.Visible = Visible
+                    DepBox.Items.Content.Instance.Visible = Visible
+                end,
+        
+                SetupDependencies = function(DepBox, Dependencies)
+                    DepBox.Dependencies = Dependencies
+        
+                    local function Update()
+                        for _, Dependency in Dependencies do
+                            local Control, Expected = Dependency[1], Dependency[2]
+                            local Value = Control and Control.Value
+        
+                            if type(Value) == "table" then
+                                if not table.find(Value, Expected) then
+                                    DepBox:SetVisibility(false)
+                                    return
+                                end
+                            elseif Value ~= Expected then
+                                DepBox:SetVisibility(false)
+                                return
+                            end
+                        end
+        
+                        DepBox:SetVisibility(true)
+                    end
+        
+                    for _, Dependency in Dependencies do
+                        local Control = Dependency[1]
+        
+                        if Control then
+                            local Callback = Control.Callback
+        
+                            Control.Callback = function(...)
+                                Library:SafeCall(Callback, ...)
+                                Update()
+                            end
+                        end
+                    end
+        
+                    Update()
+                end
+            }, Library)
+        end
+
+
         Library.SubPage = function(Self, Params)
             Params = Params or { }
 
