@@ -569,7 +569,7 @@ do
 				hitmarkers = r100.images.hitmarkers,
 			}
 
-			local s9 = "https://raw.githubusercontent.com/onichan-ren/framework/main/resources" .. (({ sounds = "storage", images = "storage", hitsounds = "hitsounds", hitmarkers = "hitmarkers" })[s27] or "storage") .. "/"
+			local s9 = "https://raw.githubusercontent.com/onichan-ren/framework/main/resources/" .. (({ sounds = "storage", images = "storage", hitsounds = "hitsounds", hitmarkers = "hitmarkers" })[s27] or "storage") .. "/"
 			local s1_1 = r100.directory .. "/" .. s27
 			local s11 = s2[s27]
 			if not s11 then
@@ -647,7 +647,7 @@ do
 		end
 
 		if r100.loading_data.needs_download then
-			-- warn("[backtrack.tech:project_delta] downloading assets") best paster
+			warn("Downloading files please wait a second!")
 		end
 
 		r351.download_assets(r12.sound_names, "sounds", ".mp3")
@@ -9058,6 +9058,5 @@ do
 
 	r2_7()
 
-
-	return r100
+	return r100, r357
 end
