@@ -1175,12 +1175,16 @@ do
 
 		if r100.active.slider then
 			local L = r100.active.slider
-			if not r100.menu_opened or L.cfg.input_mode then
-				return
+			if not r100.menu_opened or L.cfg.input_mode or not L.slider.Parent then
+				r100.active.slider = nil
+			else
+				local width = L.slider.AbsoluteSize.X
+				if width > 0 then
+					local k = r311((R.Position.X - L.slider.AbsolutePosition.X) / width, 0, 1)
+					local value = r311((L.cfg.max - L.cfg.min) * k + L.cfg.min, L.cfg.min, L.cfg.max)
+					L.cfg.set(value)
+				end
 			end
-			local k = (R.Position.X - L.slider.AbsolutePosition.X) / L.slider.AbsoluteSize.X
-			local R = r311((L.cfg.max - L.cfg.min) * k + L.cfg.min, L.cfg.min, L.cfg.max)
-			L.cfg.set(R)
 		end
 
 		if r100.active.color then
@@ -3873,18 +3877,26 @@ do
 				flag = s5.flag or "nil",
 				callback = s5.callback or function()
 				end,
-				visible = s5.visible or true,
+				visible = s5.visible ~= false,
 				tooltip = s5.tooltip,
-				min = s5.min or s5.minimum or 0,
-				max = s5.max or s5.maximum or 100,
-				intervals = s5.interval or s5.decimal or 1,
-				default = s5.default or 10,
+				min = s5.min ~= nil and s5.min or s5.minimum or 0,
+				max = s5.max ~= nil and s5.max or s5.maximum or 100,
+				intervals = s5.interval ~= nil and s5.interval or s5.decimal or 1,
+				default = s5.default ~= nil and s5.default or 10,
 				dragging = false,
-				value = s5.default or 10,
+				value = s5.default ~= nil and s5.default or 10,
 				input_mode = false,
 				items = {},
 				slider_type = s5.slider_type or "keybind",
 			}
+
+			if s51.max < s51.min then
+				s51.min, s51.max = s51.max, s51.min
+			end
+
+			if type(s51.intervals) ~= "number" or s51.intervals <= 0 then
+				s51.intervals = 1
+			end
 
 			local s1 = r100:create("TextLabel", {
 				Parent = s4.holder,
@@ -4227,7 +4239,9 @@ do
 					return
 				end
 				s51.value = r311(r100:round(t31, s51.intervals), s51.min, s51.max)
-				s37.Size = r22((s51.value - s51.min) / (s51.max - s51.min), 0, 1, 0)
+				local range = s51.max - s51.min
+				local percent = range == 0 and 0 or (s51.value - s51.min) / range
+				s37.Size = r22(percent, 0, 1, 0)
 				local t5 = s51.suffix
 				local t9 = s51.suffix
 				s31.Text = r324(s51.value) .. t5 .. "/" .. r324(s51.max) .. t9
@@ -4408,7 +4422,7 @@ do
 
 			s9.default = s34.default or false
 			s9.colorpicker = s34.color or nil
-			s9.visible = s34.visible or true
+			s9.visible = s34.visible ~= false
 			s9.tooltip = s34.tooltip or nil
 
 			local s1 = r100:create("TextButton", {
@@ -4601,7 +4615,7 @@ do
 			}
 
 			s4.color = s12.color or r296(1, 1, 1)
-			s4.alpha = s12.alpha or 1
+			s4.alpha = s12.alpha ~= nil and s12.alpha or 1
 
 			s4.callback = s12.callback or function()
 			end
@@ -5126,8 +5140,8 @@ do
 					s12_1 = t15_1
 				end
 
-				if t16 then
-					s79 = t16
+				if t16 ~= nil then
+					s79 = r311(t16, 0, 1)
 				end
 
 				local t13_1 = r298(s10, s11_1, s12_1)
@@ -5628,7 +5642,7 @@ do
 				callback = s35.callback or function()
 				end,
 				multi = s35.multi or false,
-				visible = s35.visible or true,
+				visible = s35.visible ~= false,
 				open = false,
 				option_instances = {},
 				multi_items = {},
@@ -5987,17 +6001,27 @@ do
 			end
 
 			s11.set_visible = function(t13)
-				r100.current_element_open = s11.ignore or s11
+				if t13 then
+					local current = r100.current_element_open
+					local this_element = s11.ignore or s11
+
+					if current and current ~= this_element and not s11.ignore then
+						current.set_visible(false)
+						current.open = false
+					end
+
+					r100.current_element_open = this_element
+				else
+					if r100.current_element_open == s11 or r100.current_element_open == s11.ignore then
+						r100.current_element_open = nil
+					end
+				end
+
 				s48.Visible = t13
 				s44.Text = t13 and "-" or "+"
 				s44.TextSize = t13 and 12 or 8
 
 				if t13 then
-					if r100.current_element_open and r100.current_element_open ~= s11 and not s11.ignore then
-						r100.current_element_open.set_visible(false)
-						r100.current_element_open.open = false
-					end
-
 					s48.Size = r22(0, s32_1.AbsoluteSize.X, 0, s48.Size.Y.Offset)
 					s48.Position = r22(0, s32_1.AbsolutePosition.X + 1, 0, s32_1.AbsolutePosition.Y + 22)
 				end
@@ -6017,7 +6041,7 @@ do
 					end
 				end
 
-				s45.Text = t8 and r332(t6, ", ") or t6[1] or "nun"
+				s45.Text = t8 and r332(t6, ", ") or t6[1] or "none"
 				r349[s11.flag] = t8 and t6 or t6[1]
 				s11.callback(r349[s11.flag])
 			end
@@ -6099,7 +6123,7 @@ do
 				scale = s20.size or 232,
 				items = s20.items or { "l1", "l2", "l3" },
 				placeholdertext = s20.placeholder or s20.placeholdertext or "Search here...",
-				visible = s20.visible or true,
+				visible = s20.visible ~= false,
 				option_instances = {},
 				current_instance = nil,
 				flag = s20.flag or "n/a",
@@ -6360,7 +6384,7 @@ do
 				flag = s28.flag or "",
 				callback = s28.callback or function()
 				end,
-				visible = s28.visible or true,
+				visible = s28.visible ~= false,
 				max = s28.max or 9999,
 				removing = false,
 			}
@@ -6522,7 +6546,7 @@ do
 		r100.button_holder = function(s24, s25)
 			local s8 = {
 				flag = s25.flag or "n/a",
-				visible = s25.visible or true,
+				visible = s25.visible ~= false,
 			}
 
 			local s26 = r100:create("TextLabel", {
