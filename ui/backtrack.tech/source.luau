@@ -288,18 +288,18 @@ do
 			script_version = "1.7c",
 			loading = true,
 			unloading = false,
-			directory = "nyan.dev",
+			directory = "renhaxx",
 			easing_style_index = { "Linear", "Sine", "Back", "Bounce", "Circular", "Cubic", "Elastic", "Exponential", "Quad", "Quart", "Quint" },
 			easing_direction_index = { "In", "Out", "InOut" },
-			module_names = { fonts = "nyan_dev.fonts", configs = "nyan_dev.configs", sounds = "nyan_dev.sounds", images = "nyan_dev.images", hitmarkers = "nyan_dev.hitmarkers" },
+			module_names = { fonts = "renhaxx.fonts", configs = "renhaxx.configs", sounds = "renhaxx.sounds", images = "renhaxx.images", hitmarkers = "renhaxx.hitmarkers" },
 			checks = {
-				first_time = not isfolder("nyan.dev"),
+				first_time = not isfolder("renhaxx"),
 				modules = {
-					fonts = isfolder("nyan.dev/fonts"),
-					configs = isfolder("nyan.dev/configs"),
-					sounds = isfolder("nyan.dev/sounds"),
-					images = isfolder("nyan.dev/images"),
-					hitmarkers = isfolder("nyan.dev/hitmarkers"),
+					fonts = isfolder("renhaxx/fonts"),
+					configs = isfolder("renhaxx/configs"),
+					sounds = isfolder("renhaxx/sounds"),
+					images = isfolder("renhaxx/images"),
+					hitmarkers = isfolder("renhaxx/hitmarkers"),
 				},
 			},
 			flags = {},
@@ -342,7 +342,7 @@ do
 			last_update_pointer = 0,
 			animation_speed = 1,
 			pointer_design = true,
-			watermark_options = { watermark_text = "nyan.dev", private = true, version = true, fps = true, ping = true, uid = true, current_game = true, current_date = true, current_time = true },
+			watermark_options = { watermark_text = "renhaxx", private = true, version = true, fps = true, ping = true, uid = true, current_game = true, current_date = true, current_time = true },
 			user_stats = { fps = 0, ping = 0 },
 			colors = {
 				warning = r116(247, 215, 98),
@@ -515,7 +515,7 @@ do
 		}
 
 		r100.hierarchy = {
-			["nyan.dev"] = { "fonts", "configs", "sounds", "hitsounds", "images" },
+			["renhaxx"] = { "fonts", "configs", "sounds", "hitsounds", "images" },
 		}
 
 		r100.loading_data = { delay = 0.15, retries = 3, retry_delay = 1, needs_download = false }
@@ -1882,10 +1882,12 @@ do
 					t19.opened = u11
 					r100.menu_opened = u11
 
-					if u11 then
-						r351.set_property(r100.look_vector_frame, "BackgroundTransparency", 0.7)
-					else
-						r351.set_property(r100.look_vector_frame, "BackgroundTransparency", 1)
+					if r100.look_vector_frame then
+						if u11 then
+							r351.set_property(r100.look_vector_frame, "BackgroundTransparency", 0.7)
+						else
+							r351.set_property(r100.look_vector_frame, "BackgroundTransparency", 1)
+						end
 					end
 
 					r351.set_visible(t8, u11)
@@ -2298,7 +2300,7 @@ do
 					r100.user_stats.ping = r274.Network.ServerStatsItem["Data Ping"]:GetValue()
 				end)
 
-				local t53 = r100:watermark({ default = "nyan.dev - uid: 0 - 01/01/0001 - 00:00:00" })
+				local t53 = r100:watermark({ default = "renhaxx - uid: 0 - 01/01/0001 - 00:00:00" })
 
 				r336(function()
 					while r337(1) do
@@ -2542,10 +2544,10 @@ do
 						name = "Custom Watermark",
 						flag = "custom_watermark",
 						max = 20,
-						placeholder = "nyan.dev",
+						placeholder = "renhaxx",
 						callback = function(v25)
 							if v25 == "" then
-								r100.watermark_options.watermark_text = "nyan.dev"
+								r100.watermark_options.watermark_text = "renhaxx"
 							elseif v25:match("^%s+$") then
 								r100:notification({ text = "The watermark cannot be empty. Please enter a valid string.", flashing = true, time = 5 })
 
@@ -2555,7 +2557,7 @@ do
 									color = r100.colors.warning,
 								})
 
-								r100.watermark_options.watermark_text = "nyan.dev"
+								r100.watermark_options.watermark_text = "renhaxx"
 							elseif v25:lower():find("uid") then
 								r100:notification({ text = "The keyword 'uid' is not allowed in the watermark.", flashing = true, time = 5 })
 
@@ -2565,7 +2567,7 @@ do
 									color = r100.colors.warning,
 								})
 
-								r100.watermark_options.watermark_text = "nyan.dev"
+								r100.watermark_options.watermark_text = "renhaxx"
 							else
 								r100.watermark_options.watermark_text = v25
 							end
