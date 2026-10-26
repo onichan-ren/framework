@@ -342,7 +342,7 @@ do
 			last_update_pointer = 0,
 			animation_speed = 1,
 			pointer_design = true,
-			watermark_options = { watermark_text = "renhaxx", private = true, version = true, fps = true, ping = true, uid = true, current_game = true, current_date = true, current_time = true },
+			watermark_options = { watermark_text = "renhaxx", private = true, version = true, fps = true, ping = true, uid = false, current_game = true, current_date = true, current_time = true },
 			user_stats = { fps = 0, ping = 0 },
 			colors = {
 				warning = r116(247, 215, 98),
@@ -2327,12 +2327,8 @@ do
 								r327(u6, r324(r305(r100.user_stats.ping)) .. "ms")
 							end
 
-							if r100.watermark_options.uid and r113_1[2] then
-								r327(u6, "uid " .. r324(r113_1[2]))
-							end
-
 							if r100.watermark_options.current_game then
-								r327(u6, "project delta")
+								r327(u6, "kontra")
 							end
 
 							if r100.watermark_options.current_date then
@@ -2522,7 +2518,7 @@ do
 						items = t16,
 						default = t16,
 						callback = function(v29)
-							local v2 = { User = "private", Version = "version", FPS = "fps", Ping = "ping", UID = "uid", Game = "current_game", Date = "current_date", Time = "current_time" }
+							local v2 = { User = "private", Version = "version", FPS = "fps", Ping = "ping", Game = "current_game", Date = "current_date", Time = "current_time" }
 
 							for _, v32 in r1_2, v2, nil do
 								r100.watermark_options[v32] = false
