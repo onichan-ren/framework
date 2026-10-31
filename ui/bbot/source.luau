@@ -30,7 +30,7 @@
         TweeningSpeed = 0.25
     }
     
-    local themes = {
+        local themes = {
         preset = {
             inline = rgb(50, 50, 50);
             gradient = rgb(40, 40, 40);
@@ -45,6 +45,109 @@
         gradients = {
             Selected = {};
             Deselected = {};
+        },
+    }
+
+    Library.Themes = {
+        ["Default"] = {
+            inline = rgb(50, 50, 50),
+            gradient = rgb(40, 40, 40),
+            outline = rgb(20, 20, 20),
+            accent = rgb(50, 119, 186),
+            background = rgb(30, 30, 30),
+            text_color = rgb(239, 239, 239),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(26, 26, 26),
+        },
+        ["Dark Charcoal"] = {
+            inline = rgb(38, 38, 38),
+            gradient = rgb(28, 28, 28),
+            outline = rgb(15, 15, 15),
+            accent = rgb(235, 175, 45),
+            background = rgb(22, 22, 22),
+            text_color = rgb(240, 240, 240),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(18, 18, 18),
+        },
+        ["Midnight Purple"] = {
+            inline = rgb(45, 38, 55),
+            gradient = rgb(32, 26, 42),
+            outline = rgb(18, 14, 25),
+            accent = rgb(168, 85, 247),
+            background = rgb(24, 18, 33),
+            text_color = rgb(245, 240, 250),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(20, 15, 28),
+        },
+        ["Emerald"] = {
+            inline = rgb(35, 48, 42),
+            gradient = rgb(26, 38, 32),
+            outline = rgb(14, 22, 18),
+            accent = rgb(46, 204, 113),
+            background = rgb(20, 30, 25),
+            text_color = rgb(235, 245, 240),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(16, 24, 20),
+        },
+        ["Crimson"] = {
+            inline = rgb(52, 36, 40),
+            gradient = rgb(40, 26, 30),
+            outline = rgb(22, 12, 15),
+            accent = rgb(235, 65, 85),
+            background = rgb(30, 18, 22),
+            text_color = rgb(245, 235, 238),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(24, 14, 17),
+        },
+        ["Ocean"] = {
+            inline = rgb(35, 45, 55),
+            gradient = rgb(25, 34, 44),
+            outline = rgb(12, 18, 25),
+            accent = rgb(0, 195, 255),
+            background = rgb(18, 25, 34),
+            text_color = rgb(235, 245, 255),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(14, 20, 28),
+        },
+        ["Blurple"] = {
+            inline = rgb(48, 52, 65),
+            gradient = rgb(38, 41, 52),
+            outline = rgb(20, 22, 30),
+            accent = rgb(88, 101, 242),
+            background = rgb(28, 30, 40),
+            text_color = rgb(240, 242, 248),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(22, 24, 32),
+        },
+        ["Gamesense"] = {
+            inline = rgb(32, 32, 32),
+            gradient = rgb(24, 24, 24),
+            outline = rgb(12, 12, 12),
+            accent = rgb(148, 209, 62),
+            background = rgb(18, 18, 18),
+            text_color = rgb(225, 225, 225),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(14, 14, 14),
+        },
+        ["Nord"] = {
+            inline = rgb(46, 52, 64),
+            gradient = rgb(36, 41, 51),
+            outline = rgb(22, 25, 31),
+            accent = rgb(136, 192, 208),
+            background = rgb(26, 29, 36),
+            text_color = rgb(236, 239, 244),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(20, 22, 27),
+        },
+        ["Sunset"] = {
+            inline = rgb(55, 42, 38),
+            gradient = rgb(42, 30, 28),
+            outline = rgb(24, 15, 12),
+            accent = rgb(255, 126, 68),
+            background = rgb(32, 22, 20),
+            text_color = rgb(255, 244, 238),
+            text_outline = rgb(0, 0, 0),
+            tab_background = rgb(25, 16, 14),
         },
     }
 
@@ -369,7 +472,6 @@
         local ConfigHolder;
         function Library:UpdateConfigList() 
             if not ConfigHolder then 
-                print("no exist :(")
                 return 
             end
             
@@ -381,7 +483,6 @@
             end
 
             for _,v in List do 
-                print(_,v)
             end 
 
             ConfigHolder.RefreshOptions(List)
@@ -1297,15 +1398,47 @@
         ]]
 
         function Library:RefreshTheme(theme, color)
-            for property,instances in themes.utility[theme] do 
-                for _,object in instances do
-                    if object[property] == themes.preset[theme] then 
-                        object[property] = color 
-                    end
-                end 
+            if themes.utility[theme] then
+                for property,instances in themes.utility[theme] do 
+                    for _,object in instances do
+                        pcall(function()
+                            object[property] = color 
+                        end)
+                    end 
+                end
             end
 
             themes.preset[theme] = color 
+        end 
+
+        function Library:SetTheme(theme)
+            local preset = type(theme) == "string" and Library.Themes[theme] or theme
+            if not preset then return end
+
+            for key, col in preset do
+                if themes.preset[key] then
+                    Library:RefreshTheme(key, col)
+                end
+            end
+
+            for _,seq in themes.gradients.Selected do 
+                seq.Color = rgbseq{rgbkey(0, themes.preset.inline), rgbkey(1, themes.preset.gradient)}
+            end 
+
+            for _,seq in themes.gradients.Deselected do 
+                seq.Color = rgbseq{rgbkey(0, themes.preset.gradient), rgbkey(1, themes.preset.background)}
+            end
+
+            if Library.Colorpickers then
+                if Library.Colorpickers.Inline and preset.inline then Library.Colorpickers.Inline.Set(preset.inline, 0) end
+                if Library.Colorpickers.Gradient and preset.gradient then Library.Colorpickers.Gradient.Set(preset.gradient, 0) end
+                if Library.Colorpickers.Outline and preset.outline then Library.Colorpickers.Outline.Set(preset.outline, 0) end
+                if Library.Colorpickers.Accent and preset.accent then Library.Colorpickers.Accent.Set(preset.accent, 0) end
+                if Library.Colorpickers.Background and preset.background then Library.Colorpickers.Background.Set(preset.background, 0) end
+                if Library.Colorpickers.TextColor and preset.text_color then Library.Colorpickers.TextColor.Set(preset.text_color, 0) end
+                if Library.Colorpickers.TextOutline and preset.text_outline then Library.Colorpickers.TextOutline.Set(preset.text_outline, 0) end
+                if Library.Colorpickers.TabBackground and preset.tab_background then Library.Colorpickers.TabBackground.Set(preset.tab_background, 0) end
+            end
         end 
 
         function Library:Connection(signal, callback)
@@ -1996,7 +2129,6 @@
 
             function Cfg.ToggleKeybindList(bool)
                 Items.Keybind_List.Visible = bool
-                print(bool)
             end
             
             return setmetatable(Cfg, Library)
@@ -3103,7 +3235,6 @@
                 end)
     
                 if not Cfg.TabInfo then
-                    print("new tab")
                     SubItems.Fill.Size = dim2(1, -2, 0, 1);
                     SubItems.TextPadding.PaddingRight = dim(0, 8);
                     Data.OpenTab()
@@ -4070,7 +4201,6 @@
 
             Library:Connection(InputService.InputBegan, function(input, game_event)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    print("clicked")
                     if (Items.DropdownElements.Visible) and not Library:Hovering({Items.DropdownElements, Items.Dropdown}) then
                         Cfg.SetVisible(false)
                         Cfg.Open = false
@@ -4406,6 +4536,7 @@
                 -- Mode Holder
                     Items.ModeHolder = Library:Create( "Frame" , {
                         Parent = Library.Items;
+                        Visible = false;
                         Size = dim2(0, 160, 0, 70);
                         Name = "\0";
                         BorderColor3 = rgb(0, 0, 0);
@@ -4847,7 +4978,20 @@
                 Library.TweeningSpeed = int
             end})
 
-            Section:Label({Name = "Inline"}):Colorpicker({Flag = "Inline", Callback = function(color, alpha) 
+            local ThemeNames = {"Default", "Dark Charcoal", "Midnight Purple", "Emerald", "Crimson", "Ocean", "Blurple", "Gamesense", "Nord", "Sunset"}
+            Section:Dropdown({
+                Name = "Theme Preset",
+                Options = ThemeNames,
+                Flag = "ThemePreset",
+                Default = "Default",
+                Callback = function(themeName)
+                    Library:SetTheme(themeName)
+                end
+            })
+
+            Library.Colorpickers = {}
+
+            Library.Colorpickers.Inline = Section:Label({Name = "Inline"}):Colorpicker({Flag = "Inline", Callback = function(color, alpha) 
                 Library:RefreshTheme("inline", color) 
 
                 for _,seq in themes.gradients.Selected do 
@@ -4855,7 +4999,7 @@
                 end 
             end, Color = themes.preset.inline})
 
-            Section:Label({Name = "Gradient"}):Colorpicker({Flag = "Gradient", Callback = function(color, alpha) 
+            Library.Colorpickers.Gradient = Section:Label({Name = "Gradient"}):Colorpicker({Flag = "Gradient", Callback = function(color, alpha) 
                 Library:RefreshTheme("gradient", color)
 
                 for _,seq in themes.gradients.Selected do 
@@ -4867,15 +5011,15 @@
                 end
             end, Color = themes.preset.gradient})
             
-            Section:Label({Name = "Outline"}):Colorpicker({Flag = "Outline", Callback = function(color, alpha) 
+            Library.Colorpickers.Outline = Section:Label({Name = "Outline"}):Colorpicker({Flag = "Outline", Callback = function(color, alpha) 
                 Library:RefreshTheme("outline", color) 
             end, Color = themes.preset.outline})
             
-            Section:Label({Name = "Accent"}):Colorpicker({Flag = "Accent", Callback = function(color, alpha) 
+            Library.Colorpickers.Accent = Section:Label({Name = "Accent"}):Colorpicker({Flag = "Accent", Callback = function(color, alpha) 
                 Library:RefreshTheme("accent", color) 
             end, Color = themes.preset.accent})
             
-            Section:Label({Name = "Background"}):Colorpicker({Flag = "Background", Callback = function(color, alpha) 
+            Library.Colorpickers.Background = Section:Label({Name = "Background"}):Colorpicker({Flag = "Background", Callback = function(color, alpha) 
                 Library:RefreshTheme("background", color) 
 
                 for _,seq in themes.gradients.Deselected do 
@@ -4883,15 +5027,15 @@
                 end
             end, Color = themes.preset.background})
             
-            Section:Label({Name = "Text Color"}):Colorpicker({Flag = "Text Color", Callback = function(color, alpha) 
+            Library.Colorpickers.TextColor = Section:Label({Name = "Text Color"}):Colorpicker({Flag = "Text Color", Callback = function(color, alpha) 
                 Library:RefreshTheme("text_color", color) 
             end, Color = themes.preset.text_color})
             
-            Section:Label({Name = "Text Outline"}):Colorpicker({Flag = "Text Outline", Callback = function(color, alpha) 
+            Library.Colorpickers.TextOutline = Section:Label({Name = "Text Outline"}):Colorpicker({Flag = "Text Outline", Callback = function(color, alpha) 
                 Library:RefreshTheme("text_outline", color) 
             end, Color = themes.preset.text_outline})
             
-            Section:Label({Name = "Background"}):Colorpicker({Flag = "Background", Callback = function(color, alpha) 
+            Library.Colorpickers.TabBackground = Section:Label({Name = "Tab Background"}):Colorpicker({Flag = "Tab_Background", Callback = function(color, alpha) 
                 Library:RefreshTheme("tab_background", color) 
             end, Color = themes.preset.tab_background})
             
@@ -5034,8 +5178,6 @@
 
             Library:Tween(Items.Outline, {AnchorPoint = vec2(0, 0)})
             Library:Tween(Items.AccentLine, {Size = dim2(0, -2, 0, 1)}, TweenInfo.new(Cfg.Lifetime, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut, 0, false, 0))
-
-            print(Items.AccentLine.BackgroundTransparency)
             task.spawn(function()
                 task.wait(Cfg.Lifetime)
                 Notifications.Notifs[index] = nil
