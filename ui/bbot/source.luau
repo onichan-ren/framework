@@ -1450,24 +1450,31 @@
         end
 
         function Library:CloseElement() 
-            local IsMulti = typeof(Library.OpenElement)
-
             if not Library.OpenElement then 
                 return 
             end
 
-            for i = 1, #Library.OpenElement do
-                local Data = Library.OpenElement[i]
-
-                if Data.Ignore then 
-                    continue 
-                end 
-
-                Data.SetVisible(false)
-                Data.Open = false
+            if type(Library.OpenElement) == "table" and Library.OpenElement.SetVisible then
+                if not Library.OpenElement.Ignore then
+                    Library.OpenElement.SetVisible(false)
+                    Library.OpenElement.Open = false
+                end
+                Library.OpenElement = nil
+                return
             end
 
-            Library.OpenElement = {}
+            if type(Library.OpenElement) == "table" then
+                for i = 1, #Library.OpenElement do
+                    local Data = Library.OpenElement[i]
+
+                    if Data and not Data.Ignore then 
+                        Data.SetVisible(false)
+                        Data.Open = false
+                    end
+                end
+            end
+
+            Library.OpenElement = nil
 		end
 
         function Library:Create(instance, options)
@@ -4010,17 +4017,19 @@
                         Position = dim2(0.30000001192092896, 0, 0.5, 0);
                         BorderColor3 = rgb(0, 0, 0);
                         BorderSizePixel = 0;
-                        AutomaticSize = Enum.AutomaticSize.Y;
+                        AutomaticSize = Enum.AutomaticSize.None;
+                        ClipsDescendants = true;
                         BackgroundColor3 = themes.preset.outline
                     });	Library:Themify(Items.DropdownElements, "outline", "BackgroundColor3")
-                    
+
                     Items.Inline = Library:Create( "Frame" , {
                         Parent = Items.DropdownElements;
                         Name = "\0";
                         Position = dim2(0, 1, 0, 1);
                         BorderColor3 = rgb(0, 0, 0);
-                        Size = dim2(1, -2, 1, -2);
                         BorderSizePixel = 0;
+                        ClipsDescendants = true;
+                        Size = dim2(1, -2, 1, -2);
                         BackgroundColor3 = themes.preset.inline
                     });	Library:Themify(Items.Inline, "inline", "BackgroundColor3")
                     
@@ -4029,8 +4038,9 @@
                         Name = "\0";
                         Position = dim2(0, 1, 0, 1);
                         BorderColor3 = rgb(0, 0, 0);
-                        Size = dim2(1, -2, 1, -2);
                         BorderSizePixel = 0;
+                        ClipsDescendants = true;
+                        Size = dim2(1, -2, 1, -2);
                         BackgroundColor3 = rgb(255, 255, 255)
                     });
                     
@@ -4056,11 +4066,11 @@
                     Parent = Items.DropdownHolder;
                     Name = "\0";
                     ZIndex = 999;
-                    Size = dim2(1, 0, 0, 0);
+                    Size = dim2(1, 0, 0, 18);
                     BackgroundTransparency = 1;
                     TextXAlignment = Enum.TextXAlignment.Left;
                     BorderSizePixel = 0;
-                    AutomaticSize = Enum.AutomaticSize.XY;
+                    AutomaticSize = Enum.AutomaticSize.None;
                     TextSize = 12;
                     BackgroundColor3 = rgb(255, 255, 255)
                 });
@@ -4071,12 +4081,26 @@
                 });
                 
                 Library:Create( "UIPadding" , {
-                    PaddingTop = dim(0, 3);
-                    PaddingBottom = dim(0, 3);
+                    PaddingTop = dim(0, 0);
+                    PaddingBottom = dim(0, 0);
                     Parent = Button;
-                    PaddingRight = dim(0, 3);
-                    PaddingLeft = dim(0, 3)
-                });          
+                    PaddingRight = dim(0, 6);
+                    PaddingLeft = dim(0, 6)
+                });
+
+                Button.MouseEnter:Connect(function()
+                    local isSelected = (type(Cfg.MultiItems) == "table" and table.find(Cfg.MultiItems, Button.Text)) or Flags[Cfg.Flag] == Button.Text
+                    if not isSelected then
+                        Library:Tween(Button, {TextColor3 = rgb(255, 255, 255)}, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out))
+                    end
+                end)
+
+                Button.MouseLeave:Connect(function()
+                    local isSelected = (type(Cfg.MultiItems) == "table" and table.find(Cfg.MultiItems, Button.Text)) or Flags[Cfg.Flag] == Button.Text
+                    if not isSelected then
+                        Library:Tween(Button, {TextColor3 = rgb(179, 179, 179)}, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out))
+                    end
+                end)
 
                 table.insert(Cfg.OptionInstances, Button)
 
@@ -4084,22 +4108,47 @@
             end
             
             function Cfg.SetVisible(bool)
-                if Library.OpenElement ~= Cfg then 
-                    Library:CloseElement()
+                if bool then
+                    if Library.OpenElement and Library.OpenElement ~= Cfg then 
+                        Library:CloseElement()
+                    end
+
+                    Cfg.Open = true
+                    Library.OpenElement = Cfg
+
+                    local optionCount = #Cfg.OptionInstances
+                    local targetHeight = (optionCount * 18) + 4
+                    local width = Items.Outline.AbsoluteSize.X + 1
+
+                    Items.DropdownElements.Position = dim2(0, Items.Outline.AbsolutePosition.X, 0, Items.Outline.AbsolutePosition.Y + 80)
+                    Items.DropdownElements.Parent = Library.Items
+                    Items.DropdownElements.Visible = true
+
+                    Library:Tween(Items.DropdownElements, {Size = dim_offset(width, targetHeight)}, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out))
+
+                    if not Cfg.Multi then 
+                        Items.Icon.Text = "-"
+                    end
+                else
+                    Cfg.Open = false
+                    if Library.OpenElement == Cfg then
+                        Library.OpenElement = nil
+                    end
+
+                    local width = Items.Outline.AbsoluteSize.X + 1
+                    Library:Tween(Items.DropdownElements, {Size = dim_offset(width, 0)}, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out))
+
+                    if not Cfg.Multi then 
+                        Items.Icon.Text = "+"
+                    end
+
+                    task.delay(0.19, function()
+                        if not Cfg.Open then
+                            Items.DropdownElements.Visible = false
+                            Items.DropdownElements.Parent = Library.Other
+                        end
+                    end)
                 end
-
-                Items.DropdownElements.Position = dim2(0, Items.Outline.AbsolutePosition.X, 0, Items.Outline.AbsolutePosition.Y + 80)
-				Items.DropdownElements.Size = dim_offset(Items.Outline.AbsoluteSize.X + 1, 0)
-                Items.DropdownElements.Visible = bool 
-                Items.DropdownElements.Parent = bool and Library.Items or Library.Other; 
-
-                if not Cfg.Multi then 
-                    Items.Icon.Text = bool and "+" or "-"
-                end
-
-                -- Cfg.Tween(bool)
-                
-                Library.OpenElement = Cfg
             end
             
             function Cfg.Set(value)
@@ -4144,66 +4193,29 @@
                             end
                             
                             Cfg.Set(Cfg.MultiItems) 				
-                        else 
+                        else
                             Cfg.SetVisible(false)
-                            Cfg.Open = false
-                            
                             Cfg.Set(Button.Text)
                         end
                     end)
                 end
-            end
 
-            function Cfg.Tween(bool) 
-                if Cfg.Tweening == true then 
-                    return 
-                end 
-
-                Cfg.Tweening = true 
-
-                if bool then 
-                    Items.DropdownElements.Visible = true
-                    Items.DropdownElements.Parent = Library.Items
+                if Cfg.Open then
+                    local optionCount = #Cfg.OptionInstances
+                    local targetHeight = (optionCount * 18) + 4
+                    local width = Items.Outline.AbsoluteSize.X + 1
+                    Library:Tween(Items.DropdownElements, {Size = dim_offset(width, targetHeight)}, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out))
                 end
-
-                local Children = Items.DropdownElements:GetDescendants()
-                table.insert(Children, Items.DropdownElements)
-
-                local Tween;
-                for _,obj in Children do
-                    local Index = Library:GetTransparency(obj)
-
-                    if not Index then 
-                        continue 
-                    end
-
-                    if type(Index) == "table" then
-                        for _,prop in Index do
-                            Tween = Library:Fade(obj, prop, bool, 0.1)
-                        end
-                    else
-                        Tween = Library:Fade(obj, Index, bool, 0.1)
-                    end
-                end
-
-                task.delay(0.09, function() 
-                    Cfg.Tweening = false
-                    Items.DropdownElements.Visible = bool
-                    Items.DropdownElements.Parent = bool and Library.Items or Library.Other
-                end)
             end
 
             Items.Outline.MouseButton1Click:Connect(function()
-                Cfg.Open = not Cfg.Open 
-
-                Cfg.SetVisible(Cfg.Open)
+                Cfg.SetVisible(not Cfg.Open)
             end)
 
-            Library:Connection(InputService.InputBegan, function(input, game_event)
+            Library:Connection(InputService.InputBegan, function(input, game_event) 
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     if (Items.DropdownElements.Visible) and not Library:Hovering({Items.DropdownElements, Items.Dropdown}) then
                         Cfg.SetVisible(false)
-                        Cfg.Open = false
                     end 
                 end 
             end)
