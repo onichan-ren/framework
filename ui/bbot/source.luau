@@ -4067,7 +4067,7 @@
                         AnchorPoint = vec2(1, 0);
                         Size = dim2(0, 0, 1, 0);
                         BackgroundTransparency = 1;
-                        Position = dim2(1, -4, 0, 0);
+                        Position = dim2(1, -4, 0, -1);
                         BorderSizePixel = 0;
                         AutomaticSize = Enum.AutomaticSize.XY;
                         TextSize = 12;
@@ -5062,7 +5062,12 @@
                 Notifications:Create({Name = "Deleted Config (" ..  Library.Directory .. "/configs/" .. ConfigText .. ".cfg" .. ")"}) 
             end})
 
+            window.Tweening = true
             Section:Label({Name = "Menu Bind"}):Keybind({Name = "Menu Bind", ShowInList = false, Callback = function(bool) 
+                if window.Tweening then
+                    return 
+                end 
+
                 window.ToggleMenu(bool) 
             end, Default = Enum.KeyCode.Delete})
 
