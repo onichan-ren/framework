@@ -3578,10 +3578,11 @@
                             Parent = self.Items.GroupElements or self.Items.Elements;
                             Name = "\0";
                             Visible = false;
+                            ClipsDescendants = true;
                             BackgroundTransparency = 1;
                             Size = dim2(1, 0, 0, 0);
                             BorderSizePixel = 0;
-                            AutomaticSize = Enum.AutomaticSize.Y;
+                            AutomaticSize = Enum.AutomaticSize.None;
                             BackgroundColor3 = rgb(255, 255, 255)
                         });
 
@@ -3607,7 +3608,7 @@
                             BackgroundColor3 = rgb(255, 255, 255)
                         });
                         
-                        Library:Create( "UIListLayout" , {
+                        Items.ListLayout = Library:Create( "UIListLayout" , {
                             Parent = Items.GroupElements;
                             Padding = dim(0, 4);
                             SortOrder = Enum.SortOrder.LayoutOrder
@@ -3637,21 +3638,78 @@
                 end 
             end;
             
-            function Cfg.Set(bool)
+            function Cfg.Set(bool, instant)
                 Cfg.Callback(bool)
 
-                Library:Tween(Items.Accent, {BackgroundColor3 = bool and themes.preset.accent or themes.preset.inline})
+                if instant then
+                    Items.Accent.BackgroundColor3 = bool and themes.preset.accent or themes.preset.inline
+                else
+                    Library:Tween(Items.Accent, {BackgroundColor3 = bool and themes.preset.accent or themes.preset.inline})
+                end
                 
                 Flags[Cfg.Flag] = bool
                 
                 if Cfg.Folding then
-                    Items.Group.Visible = bool
-                    Items.Fade.BackgroundTransparency = 0
-                    
                     local tweenSpeed = Library.TweeningSpeed or 0.25
                     local easingStyle = Library.EasingStyle or Enum.EasingStyle.Quint
-                    Library:Tween(Items.Arrow, {Rotation = bool and 180 or 0}, TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out))
-                    Library:Tween(Items.Fade, {BackgroundTransparency = 1}, TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out))
+                    local tweenInfo = TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out)
+
+                    if instant then
+                        Items.Group.Visible = bool
+                        Items.Group.ClipsDescendants = true
+                        Items.Arrow.Rotation = bool and 180 or 0
+                        Items.Fade.BackgroundTransparency = 1
+                        if bool then
+                            Items.Group.AutomaticSize = Enum.AutomaticSize.Y
+                            Items.Group.Size = dim2(1, 0, 0, 0)
+                        else
+                            Items.Group.AutomaticSize = Enum.AutomaticSize.None
+                            Items.Group.Size = dim2(1, 0, 0, 0)
+                        end
+                    else
+                        if bool then
+                            Items.Group.Visible = true
+                            Items.Group.ClipsDescendants = true
+                            Items.Group.AutomaticSize = Enum.AutomaticSize.None
+
+                            local targetHeight = (Items.ListLayout and Items.ListLayout.AbsoluteContentSize.Y) or 0
+                            if targetHeight <= 0 then
+                                targetHeight = Items.GroupElements.AbsoluteSize.Y
+                            end
+                            if targetHeight <= 0 then
+                                targetHeight = 24
+                            end
+
+                            Items.Group.Size = dim2(1, 0, 0, 0)
+                            Items.Fade.BackgroundTransparency = 0
+                            Library:Tween(Items.Group, {Size = dim2(1, 0, 0, targetHeight)}, tweenInfo)
+                            Library:Tween(Items.Fade, {BackgroundTransparency = 1}, tweenInfo)
+                            Library:Tween(Items.Arrow, {Rotation = 180}, tweenInfo)
+
+                            task.delay(tweenSpeed, function()
+                                if Cfg.Enabled then
+                                    Items.Group.AutomaticSize = Enum.AutomaticSize.Y
+                                    Items.Group.Size = dim2(1, 0, 0, 0)
+                                end
+                            end)
+                        else
+                            local currentHeight = Items.Group.AbsoluteSize.Y
+                            Items.Group.AutomaticSize = Enum.AutomaticSize.None
+                            Items.Group.Size = dim2(1, 0, 0, currentHeight)
+                            Items.Group.ClipsDescendants = true
+
+                            Library:Tween(Items.Group, {Size = dim2(1, 0, 0, 0)}, tweenInfo)
+                            Library:Tween(Items.Fade, {BackgroundTransparency = 0}, tweenInfo)
+                            Library:Tween(Items.Arrow, {Rotation = 0}, tweenInfo)
+
+                            task.delay(tweenSpeed, function()
+                                if not Cfg.Enabled then
+                                    Items.Group.Visible = false
+                                    Items.Fade.BackgroundTransparency = 1
+                                end
+                            end)
+                        end
+                    end
                 end 
             end 
             
@@ -3660,7 +3718,7 @@
                 Cfg.Set(Cfg.Enabled)
             end)
 
-            Cfg.Set(Cfg.Enabled)
+            Cfg.Set(Cfg.Enabled, true)
 
             ConfigFlags[Cfg.Flag] = Cfg.Set
 
