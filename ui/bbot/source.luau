@@ -27,7 +27,8 @@
         Notifications = {Notifs = {}},
         OpenElement = {}; -- type: table or userdata
         EasingStyle = Enum.EasingStyle.Quint;
-        TweeningSpeed = 0.25
+        TweeningSpeed = 0.25;
+        DependencyBoxes = {};
     }
     getgenv().Library = Library
     
@@ -1392,7 +1393,9 @@
                         Function(Value)
                     end
                 end 
-            end 
+            end
+
+            Library:UpdateDependencyBoxes() 
         end 
         
         function Library:Round(num, float) 
@@ -1514,6 +1517,15 @@
             return ins 
         end
 
+        function Library:UpdateDependencyBoxes()
+            if not Library.DependencyBoxes then return end
+            for _, Depbox in Library.DependencyBoxes do
+                pcall(function()
+                    Depbox:Update()
+                end)
+            end
+        end
+
         function Library:Unload() 
             if Library.Items then 
                 Library.Items:Destroy()
@@ -1528,6 +1540,7 @@
                 connection = nil 
             end
 
+            Library.DependencyBoxes = {}
             getgenv().Library = nil 
         end
     --
@@ -3648,6 +3661,7 @@
                 end
                 
                 Flags[Cfg.Flag] = bool
+                Library:UpdateDependencyBoxes()
                 
                 if Cfg.Folding then
                     local tweenSpeed = Library.TweeningSpeed or 0.25
@@ -3721,6 +3735,184 @@
             Cfg.Set(Cfg.Enabled, true)
 
             ConfigFlags[Cfg.Flag] = Cfg.Set
+
+            return setmetatable(Cfg, Library)
+        end
+
+        function Library:DepBox(properties)
+            local Cfg = {
+                Dependencies = properties and (properties.Dependencies or (properties[1] and properties)) or {};
+                Open = false;
+                Initialized = false;
+                Items = {};
+            }
+
+            local Items = Cfg.Items; do 
+                -- Group Elements (matching Toggle's folding design)
+                Items.Group = Library:Create( "Frame" , {
+                    BorderColor3 = rgb(0, 0, 0);
+                    Parent = self.Items.GroupElements or self.Items.Elements;
+                    Name = "\0";
+                    Visible = false;
+                    ClipsDescendants = true;
+                    BackgroundTransparency = 1;
+                    Size = dim2(1, 0, 0, 0);
+                    BorderSizePixel = 0;
+                    AutomaticSize = Enum.AutomaticSize.None;
+                    BackgroundColor3 = rgb(255, 255, 255)
+                });
+
+                Items.Fade = Library:Create( "Frame" , {
+                    Parent = Items.Group;
+                    Name = "\0";
+                    BackgroundTransparency = 1;
+                    Size = dim2(1, 0, 1, 0);
+                    BorderColor3 = rgb(0, 0, 0);
+                    ZIndex = 5;
+                    BorderSizePixel = 0;
+                    BackgroundColor3 = rgb(40,40,40)
+                });	Library:Themify(Items.Fade, "gradient", "BackgroundColor3")  
+                
+                Items.GroupElements = Library:Create( "Frame" , {
+                    Parent = Items.Group;
+                    Name = "\0";
+                    BackgroundTransparency = 1;
+                    Size = dim2(1, 0, 0, 0);
+                    BorderColor3 = rgb(0, 0, 0);
+                    BorderSizePixel = 0;
+                    AutomaticSize = Enum.AutomaticSize.Y;
+                    BackgroundColor3 = rgb(255, 255, 255)
+                });
+                
+                Items.ListLayout = Library:Create( "UIListLayout" , {
+                    Parent = Items.GroupElements;
+                    Padding = dim(0, 4);
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                });
+                
+                Library:Create( "UIPadding" , {
+                    PaddingLeft = dim(0, 9);
+                    Parent = Items.GroupElements
+                });
+                
+                Items.GroupLine = Library:Create( "Frame" , {
+                    Parent = Items.Group;
+                    Name = "\0";
+                    Position = dim2(0, 2, 0, 0);
+                    BorderColor3 = rgb(0, 0, 0);
+                    Size = dim2(0, 3, 1, 0);
+                    BorderSizePixel = 0;
+                    BackgroundColor3 = themes.preset.outline
+                });	Library:Themify(Items.GroupLine, "outline", "BackgroundColor3")
+                
+                Library:Create( "UIGradient" , {
+                    Rotation = 90;
+                    Transparency = numseq{numkey(0, 1), numkey(0.05, 0), numkey(0.5, 0.018750011920928955), numkey(0.95, 0), numkey(1, 1)};
+                    Parent = Items.GroupLine
+                });
+            end;
+
+            function Cfg.Set(bool, instant)
+                if Cfg.Open == bool and Cfg.Initialized then
+                    return
+                end
+
+                Cfg.Open = bool
+
+                local tweenSpeed = Library.TweeningSpeed or 0.25
+                local easingStyle = Library.EasingStyle or Enum.EasingStyle.Quint
+                local tweenInfo = TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out)
+
+                if instant then
+                    Items.Group.Visible = bool
+                    Items.Group.ClipsDescendants = true
+                    Items.Fade.BackgroundTransparency = 1
+                    if bool then
+                        Items.Group.AutomaticSize = Enum.AutomaticSize.Y
+                        Items.Group.Size = dim2(1, 0, 0, 0)
+                    else
+                        Items.Group.AutomaticSize = Enum.AutomaticSize.None
+                        Items.Group.Size = dim2(1, 0, 0, 0)
+                    end
+                else
+                    if bool then
+                        Items.Group.Visible = true
+                        Items.Group.ClipsDescendants = true
+                        Items.Group.AutomaticSize = Enum.AutomaticSize.None
+
+                        local targetHeight = (Items.ListLayout and Items.ListLayout.AbsoluteContentSize.Y) or 0
+                        if targetHeight <= 0 then
+                            targetHeight = Items.GroupElements.AbsoluteSize.Y
+                        end
+                        if targetHeight <= 0 then
+                            targetHeight = 24
+                        end
+
+                        Items.Group.Size = dim2(1, 0, 0, 0)
+                        Items.Fade.BackgroundTransparency = 0
+                        Library:Tween(Items.Group, {Size = dim2(1, 0, 0, targetHeight)}, tweenInfo)
+                        Library:Tween(Items.Fade, {BackgroundTransparency = 1}, tweenInfo)
+
+                        task.delay(tweenSpeed, function()
+                            if Cfg.Open then
+                                Items.Group.AutomaticSize = Enum.AutomaticSize.Y
+                                Items.Group.Size = dim2(1, 0, 0, 0)
+                            end
+                        end)
+                    else
+                        local currentHeight = Items.Group.AbsoluteSize.Y
+                        Items.Group.AutomaticSize = Enum.AutomaticSize.None
+                        Items.Group.Size = dim2(1, 0, 0, currentHeight)
+                        Items.Group.ClipsDescendants = true
+
+                        Library:Tween(Items.Group, {Size = dim2(1, 0, 0, 0)}, tweenInfo)
+                        Library:Tween(Items.Fade, {BackgroundTransparency = 0}, tweenInfo)
+
+                        task.delay(tweenSpeed, function()
+                            if not Cfg.Open then
+                                Items.Group.Visible = false
+                                Items.Fade.BackgroundTransparency = 1
+                            end
+                        end)
+                    end
+                end
+            end
+
+            function Cfg:Update(instant)
+                local shouldOpen = true
+
+                if #Cfg.Dependencies == 0 then
+                    shouldOpen = false
+                end
+
+                for _, Dependency in Cfg.Dependencies do
+                    local FlagName = Dependency[1]
+                    local ExpectedValue = if Dependency[2] ~= nil then Dependency[2] else true
+
+                    local actualValue = Flags[FlagName]
+                    if actualValue ~= ExpectedValue then
+                        shouldOpen = false
+                        break
+                    end
+                end
+
+                Cfg.Set(shouldOpen, instant or not Cfg.Initialized)
+                Cfg.Initialized = true
+            end
+
+            function Cfg:SetupDependencies(dependencies)
+                Cfg.Dependencies = dependencies or {}
+                Cfg:Update(true)
+            end
+
+            if #Cfg.Dependencies > 0 then
+                Cfg:Update(true)
+            else
+                Cfg.Set(false, true)
+                Cfg.Initialized = true
+            end
+
+            table.insert(Library.DependencyBoxes, Cfg)
 
             return setmetatable(Cfg, Library)
         end 
@@ -3919,6 +4111,7 @@
 
                 Flags[Cfg.Flag] = Cfg.Value
                 Cfg.Callback(Flags[Cfg.Flag])
+                Library:UpdateDependencyBoxes()
             end
             
             Items.Outline.MouseButton1Down:Connect(function()
@@ -3954,7 +4147,6 @@
                     Cfg.Dragging = false
                 end 
             end)
-
             Cfg.Set(Cfg.Value, true)
             ConfigFlags[Cfg.Flag] = Cfg.Set
 
@@ -4264,7 +4456,8 @@
                 Items.InnerText.Text = if IsTable then table.concat(Selected, ", ") else Selected[1] or ""
                 Flags[Cfg.Flag] = if IsTable then Selected else Selected[1]
                 
-                Cfg.Callback(Flags[Cfg.Flag]) 
+                Cfg.Callback(Flags[Cfg.Flag])
+                Library:UpdateDependencyBoxes() 
             end
             
             function Cfg.RefreshOptions(options) 
@@ -4319,7 +4512,6 @@
 
             Flags[Cfg.Flag] = {} 
             ConfigFlags[Cfg.Flag] = Cfg.Set
-            
             Cfg.RefreshOptions(Cfg.Options)
             Cfg.Set(Cfg.Default)
                 
@@ -4539,6 +4731,7 @@
                 Items.Input.Text = text
 
                 Cfg.Callback(text)
+                Library:UpdateDependencyBoxes()
             end 
             
             Items.Input:GetPropertyChangedSignal("Text"):Connect(function()
@@ -4863,6 +5056,7 @@
                     Active = Cfg.Active,
                     Show = Cfg.Show
                 }
+                Library:UpdateDependencyBoxes()
             end
 
             function Cfg.SetVisible(bool)
