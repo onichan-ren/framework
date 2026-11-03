@@ -1393,11 +1393,23 @@
         end
 
         function Library:RefreshTheme(theme, color)
+            local oldColor = themes.preset[theme]
+
             if themes.utility[theme] then
                 for property,instances in themes.utility[theme] do
                     for _,object in instances do
                         pcall(function()
-                            object[property] = color
+                            local currentColor = object[property]
+                            local isSame = not oldColor or (currentColor == oldColor) or (
+                                currentColor and oldColor and
+                                math.abs(currentColor.R - oldColor.R) < 0.005 and
+                                math.abs(currentColor.G - oldColor.G) < 0.005 and
+                                math.abs(currentColor.B - oldColor.B) < 0.005
+                            )
+
+                            if isSame then
+                                object[property] = color
+                            end
                         end)
                     end
                 end
@@ -4349,6 +4361,7 @@
                     local width = Items.Outline.AbsoluteSize.X + 1
 
                     Items.DropdownElements.Position = dim2(0, Items.Outline.AbsolutePosition.X, 0, Items.Outline.AbsolutePosition.Y + 80)
+                    Items.DropdownElements.Size = dim_offset(width, Items.DropdownElements.Size.Y.Offset)
                     Items.DropdownElements.Parent = Library.Items
                     Items.DropdownElements.Visible = true
 
@@ -4364,6 +4377,7 @@
                     end
 
                     local width = Items.Outline.AbsoluteSize.X + 1
+                    Items.DropdownElements.Size = dim_offset(width, Items.DropdownElements.Size.Y.Offset)
                     Library:Tween(Items.DropdownElements, {Size = dim_offset(width, 0)}, tweenInfo)
 
                     if not Cfg.Multi then
@@ -4374,6 +4388,7 @@
                         if not Cfg.Open then
                             Items.DropdownElements.Visible = false
                             Items.DropdownElements.Parent = Library.Other
+                            Items.DropdownElements.Size = dim_offset(width, 0)
                         end
                     end)
                 end
@@ -4433,6 +4448,7 @@
                     local optionCount = #Cfg.OptionInstances
                     local targetHeight = (optionCount * 18) + 4
                     local width = Items.Outline.AbsoluteSize.X + 1
+                    Items.DropdownElements.Size = dim_offset(width, Items.DropdownElements.Size.Y.Offset)
                     local tweenSpeed = Library.TweeningSpeed or 0.2
                     local easingStyle = Library.EasingStyle or Enum.EasingStyle.Quint
                     Library:Tween(Items.DropdownElements, {Size = dim_offset(width, targetHeight)}, TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out))
