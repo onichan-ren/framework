@@ -4973,9 +4973,7 @@
                 end 
 
                 window.ToggleMenu(bool) 
-            end, Default = true})
-
-            delay(2, function() window.Tweening = false end)
+            end, Default = Enum.KeyCode.Delete})
 
             local Section = Tab:Section({Name = "Other", Side = "Right"})
             Section:Toggle({Name = "Watermark", Flag = "Watermark", Callback = window.ToggleWatermark})
