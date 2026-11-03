@@ -5062,12 +5062,7 @@
                 Notifications:Create({Name = "Deleted Config (" ..  Library.Directory .. "/configs/" .. ConfigText .. ".cfg" .. ")"}) 
             end})
 
-            window.Tweening = true
             Section:Label({Name = "Menu Bind"}):Keybind({Name = "Menu Bind", ShowInList = false, Callback = function(bool) 
-                if window.Tweening then
-                    return 
-                end 
-
                 window.ToggleMenu(bool) 
             end, Default = Enum.KeyCode.Delete})
 
