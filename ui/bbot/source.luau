@@ -15,7 +15,7 @@
 -- 
 
 -- Library init
-    getgenv().Library = {
+    local Library = {
         Directory = "renhaxx",
         Folders = {
             "/fonts",
@@ -29,6 +29,7 @@
         EasingStyle = Enum.EasingStyle.Quint;
         TweeningSpeed = 0.25
     }
+    getgenv().Library = Library
     
         local themes = {
         preset = {
@@ -264,6 +265,20 @@
 
 -- Library functions 
     -- Misc functions
+        function Library:Round(num, float)
+            local Multiplier = 1 / (float or 1)
+            return math.floor(num * Multiplier + 0.5) / Multiplier
+        end
+
+        function Library.Round(self, num, float)
+            if type(self) == "number" then
+                float = num
+                num = self
+            end
+            local Multiplier = 1 / (float or 1)
+            return math.floor(num * Multiplier + 0.5) / Multiplier
+        end
+
         function Library:GetTransparency(obj)
             if obj:IsA("Frame") then
                 return {"BackgroundTransparency"}
@@ -342,11 +357,13 @@
         
             Library:Connection(InputService.InputChanged, function(input, game_event) 
                 if IsResizing and input.UserInputType == Enum.UserInputType.MouseMovement then            
+                    local maxW = math.max(ParentSize.X.Offset, Camera.ViewportSize.X)
+                    local maxH = math.max(ParentSize.Y.Offset, Camera.ViewportSize.Y)
                     Parent.Size = dim2(
                         Size.X.Scale,
-                        math.clamp(Size.X.Offset + (input.Position.X - InputLost.X), ParentSize.X.Offset, Camera.ViewportSize.X), 
+                        math.clamp(Size.X.Offset + (input.Position.X - InputLost.X), ParentSize.X.Offset, maxW), 
                         Size.Y.Scale, 
-                        math.clamp(Size.Y.Offset + (input.Position.Y - InputLost.Y), ParentSize.Y.Offset, Camera.ViewportSize.Y)
+                        math.clamp(Size.Y.Offset + (input.Position.Y - InputLost.Y), ParentSize.Y.Offset, maxH)
                     )
                 end
             end)
@@ -394,18 +411,23 @@
                     local Horizontal = Camera.ViewportSize.X
                     local Vertical = Camera.ViewportSize.Y
 
+                    local targetW = (Parent.AbsoluteSize.X > 0 and Parent.AbsoluteSize.X) or Parent.Size.X.Offset
+                    local targetH = (Parent.AbsoluteSize.Y > 0 and Parent.AbsoluteSize.Y) or Parent.Size.Y.Offset
+                    local maxX = math.max(0, Horizontal - targetW)
+                    local maxY = math.max(0, Vertical - targetH)
+
                     local NewPosition = dim2(
                         0,
                         math.clamp(
                             InitialSize.X.Offset + (Input.Position.X - InitialPosition.X),
                             0,
-                            Horizontal - Parent.Size.X.Offset
+                            maxX
                         ),
                         0,
                         math.clamp(
                             InitialSize.Y.Offset + (Input.Position.Y - InitialPosition.Y),
                             0,
-                            Vertical - Parent.Size.Y.Offset
+                            maxY
                         )
                     )
 
@@ -3552,14 +3574,12 @@
                     
                     -- Elements
                         Items.Group = Library:Create( "Frame" , {
-                            LayoutOrder = 2;
                             BorderColor3 = rgb(0, 0, 0);
-                            Parent = Library.Other;
+                            Parent = self.Items.GroupElements or self.Items.Elements;
                             Name = "\0";
                             Visible = false;
                             BackgroundTransparency = 1;
-                            Position = dim2(0, 6, 0, 20);
-                            Size = dim2(1, -12, 0, 0);
+                            Size = dim2(1, 0, 0, 0);
                             BorderSizePixel = 0;
                             AutomaticSize = Enum.AutomaticSize.Y;
                             BackgroundColor3 = rgb(255, 255, 255)
@@ -3569,7 +3589,7 @@
                             Parent = Items.Group;
                             Name = "\0";
                             BackgroundTransparency = 1;
-                            Size = dim2(1, 12, 1, 0);
+                            Size = dim2(1, 0, 1, 0);
                             BorderColor3 = rgb(0, 0, 0);
                             ZIndex = 5;
                             BorderSizePixel = 0;
@@ -3580,7 +3600,7 @@
                             Parent = Items.Group;
                             Name = "\0";
                             BackgroundTransparency = 1;
-                            Size = dim2(1, 12, 0, 0);
+                            Size = dim2(1, 0, 0, 0);
                             BorderColor3 = rgb(0, 0, 0);
                             BorderSizePixel = 0;
                             AutomaticSize = Enum.AutomaticSize.Y;
@@ -3626,11 +3646,12 @@
                 
                 if Cfg.Folding then
                     Items.Group.Visible = bool
-                    Items.Group.Parent = bool and (self.Items.GroupElements or self.Items.Elements) or Library.Other
                     Items.Fade.BackgroundTransparency = 0
                     
-                    Library:Tween(Items.Arrow or Items.Arrow, {Rotation = bool and 180 or 0})
-                    Library:Tween(Items.Fade, {BackgroundTransparency = 1})
+                    local tweenSpeed = Library.TweeningSpeed or 0.25
+                    local easingStyle = Library.EasingStyle or Enum.EasingStyle.Quint
+                    Library:Tween(Items.Arrow, {Rotation = bool and 180 or 0}, TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out))
+                    Library:Tween(Items.Fade, {BackgroundTransparency = 1}, TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out))
                 end 
             end 
             
@@ -3824,10 +3845,18 @@
                 });                          
             end 
 
-            function Cfg.Set(value)
+            function Cfg.Set(value, instant)
                 Cfg.Value = math.clamp(Library:Round(value, Cfg.Intervals), Cfg.Min, Cfg.Max)
 
-                Items.Accent.Size = dim2((Cfg.Value - Cfg.Min) / (Cfg.Max - Cfg.Min), Cfg.Value == Cfg.Min and 0 or -2, 1, -2)
+                local targetSize = dim2((Cfg.Value - Cfg.Min) / (Cfg.Max - Cfg.Min), Cfg.Value == Cfg.Min and 0 or -2, 1, -2)
+                if instant then
+                    Items.Accent.Size = targetSize
+                else
+                    local tweenSpeed = Library.TweeningSpeed or 0.25
+                    local easingStyle = Library.EasingStyle or Enum.EasingStyle.Quint
+                    Library:Tween(Items.Accent, {Size = targetSize}, TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out))
+                end
+
                 Items.Value.Text = tostring(Cfg.Value) .. Cfg.Suffix
 
                 Flags[Cfg.Flag] = Cfg.Value
@@ -3835,7 +3864,11 @@
             end
             
             Items.Outline.MouseButton1Down:Connect(function()
-                Cfg.Dragging = true 
+                Cfg.Dragging = true
+                local mouseX = InputService:GetMouseLocation().X
+                local Size = (mouseX - Items.Outline.AbsolutePosition.X) / Items.Outline.AbsoluteSize.X
+                local Value = ((Cfg.Max - Cfg.Min) * Size) + Cfg.Min
+                Cfg.Set(Value)
             end)
 
             Items.Minus.MouseButton1Down:Connect(function()
@@ -3864,7 +3897,7 @@
                 end 
             end)
 
-            Cfg.Set(Cfg.Value)
+            Cfg.Set(Cfg.Value, true)
             ConfigFlags[Cfg.Flag] = Cfg.Set
 
             return setmetatable(Cfg, Library)
@@ -4108,6 +4141,10 @@
             end
             
             function Cfg.SetVisible(bool)
+                local tweenSpeed = Library.TweeningSpeed or 0.2
+                local easingStyle = Library.EasingStyle or Enum.EasingStyle.Quint
+                local tweenInfo = TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out)
+
                 if bool then
                     if Library.OpenElement and Library.OpenElement ~= Cfg then 
                         Library:CloseElement()
@@ -4124,7 +4161,7 @@
                     Items.DropdownElements.Parent = Library.Items
                     Items.DropdownElements.Visible = true
 
-                    Library:Tween(Items.DropdownElements, {Size = dim_offset(width, targetHeight)}, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out))
+                    Library:Tween(Items.DropdownElements, {Size = dim_offset(width, targetHeight)}, tweenInfo)
 
                     if not Cfg.Multi then 
                         Items.Icon.Text = "-"
@@ -4136,13 +4173,13 @@
                     end
 
                     local width = Items.Outline.AbsoluteSize.X + 1
-                    Library:Tween(Items.DropdownElements, {Size = dim_offset(width, 0)}, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out))
+                    Library:Tween(Items.DropdownElements, {Size = dim_offset(width, 0)}, tweenInfo)
 
                     if not Cfg.Multi then 
                         Items.Icon.Text = "+"
                     end
 
-                    task.delay(0.19, function()
+                    task.delay(tweenSpeed, function()
                         if not Cfg.Open then
                             Items.DropdownElements.Visible = false
                             Items.DropdownElements.Parent = Library.Other
@@ -4204,7 +4241,9 @@
                     local optionCount = #Cfg.OptionInstances
                     local targetHeight = (optionCount * 18) + 4
                     local width = Items.Outline.AbsoluteSize.X + 1
-                    Library:Tween(Items.DropdownElements, {Size = dim_offset(width, targetHeight)}, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out))
+                    local tweenSpeed = Library.TweeningSpeed or 0.2
+                    local easingStyle = Library.EasingStyle or Enum.EasingStyle.Quint
+                    Library:Tween(Items.DropdownElements, {Size = dim_offset(width, targetHeight)}, TweenInfo.new(tweenSpeed, easingStyle, Enum.EasingDirection.Out))
                 end
             end
 
@@ -4239,12 +4278,11 @@
 
             local Items = Cfg.Items; do 
                 Items.Label = Library:Create( "TextButton" , {
-                    LayoutOrder = 1;
                     FontFace = Library.Font;
                     TextColor3 = rgb(0, 0, 0);
                     BorderColor3 = rgb(0, 0, 0);
                     Text = "";
-                    Parent = self.Items.Elements;
+                    Parent = self.Items.GroupElements or self.Items.Elements;
                     BackgroundTransparency = 1;
                     Name = "\0";
                     Size = dim2(1, 0, 0, 11);
